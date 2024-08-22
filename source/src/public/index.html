@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-white">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Web RTC</title>
+
+    <style>
+        #remoteParticipantContainer {
+            width: 100%;
+            height: 446px;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+    <!-- CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.2/css/bootstrap.min.css">
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"
+        integrity="sha512-bZS47S7sPOxkjU/4Bt0zrhEtWx0y0CRkhEp8IckzK+ltifIIE9EMIMTuT/mEzoIMewUINruDBIR/jJnbguonqQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <!-- Import the webpage's stylesheet -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.1/dist/tailwind.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@1.11.1/dist/full.css" rel="stylesheet" type="text/css" />
+    <script src="//cdn.metered.ca/sdk/video/1.4.5/sdk.min.js"></script>
+
+    <!-- JavaScript và các plugin liên quan -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.9.3/umd/popper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.2/js/bootstrap.min.js"></script>
+
+</head>
+
+<body class="bg-cover bg-center bg-no-repeat h-screen"
+    style="background-image: url('https://d1csarkz8obe9u.cloudfront.net/posterpreviews/modern-conference-room-zoom-background-design-template-00093780059479fefbea93b971d380c2_screen.jpg?ts=1587849838')">
+    <div id="meetingIdContainer" class="w-full bg-white font-bold text-center py-2 shadow-lg"> <i
+            class="fas fa-id-card px-2"></i> Meeting ID: <span id="displayMeetingId" class="text-blue-500"></span>
+    </div>
+    <!-- Join view -->
+    <div id="joinView" class="w-full items-center justify-center flex">
+        <div class="card w-11/12 md:w-2/3 lg:w-1/3 max-w-screen-md bg-base-100 shadow-2xl mt-48">
+            <div class="card-body">
+                <h2 class="text-2xl font-bold text-center">Join a Meeting</h2>
+                <div class="form-control w-full max-w-xs mx-auto"> <label class="label"> <span class="label-text"><i
+                                class="fas fa-key px-2"></i>Meeting ID</span> </label>
+                    <div class="relative"> <input id="meetingId" type="text" placeholder="Meeting ID"
+                            class="w-full pr-16 input input-primary input-bordered" /> <button id="joinExistingMeeting"
+                            class="absolute top-0 right-0 rounded-l-none btn btn-primary"> <i
+                                class="fas fa-sign-in-alt"></i> </button> </div>
+                </div>
+                <div class="flex justify-center mt-6"> <button id="createANewMeeting"
+                        class="btn btn-primary shadow-lg"><i class="fas fa-plus pr-3"></i> Create a new meeting</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--Waiting Area-->
+    <div id="waitingArea" class="w-full items-center justify-center flex hidden">
+        <div class="card w-11/12 md:w-2/3 lg:w-1/3 max-w-screen-md bg-base-100 shadow-2xl mt-48">
+            <div class="card-body">
+                <h2 class="text-2xl font-bold text-center">Waiting Area</h2>
+                <div> <video id="waitingAreaVideoTag" class="w-full" muted autoplay playsinline></video> </div>
+                <div class="flex items-center justify-center mt-4 space-x-4"> <button id="waitingAreaMicrophoneButton"
+                        class="btn btn-primary shadow-lg"><i class="fas fa-microphone"></i></button> <button
+                        id="waitingAreaCameraButton" class="btn btn-primary shadow-lg"><i
+                            class="fas fa-video"></i></button> </div>
+                <div class="form-control w-full max-w-xs mx-auto mt-4"> <label class="label"> <span
+                            class="label-text">Enter a username</span> </label>
+                    <div class="relative"> <input id="username" type="text" placeholder="username"
+                            class="w-full pr-16 input input-primary input-bordered" /> <button id="joinMeetingButton"
+                            class="absolute top-0 right-0 rounded-l-none btn btn-primary shadow-lg"> <i
+                                class="fas fa-sign-in-alt"></i> </button> </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Meeting view -->
+    <div id="meetingView" class="w-full flex flex-wrap justify-center hidden"> <!-- remote video containers -->
+
+        <!-- Local Video -->
+        <div class="w-full md:w-1/3 lg:w-1/4 max-w-screen-md mt-6 p-4">
+            <div class="card bg-base-100 shadow-lg p-2">
+                <video id="meetingAreaLocalVideo" muted autoplay playsinline
+                    style="padding: 0; margin: 0; width: 100%; height: 200px;"></video>
+                <div id="meetingAreaUsername" class="bg-base-100 text-center"></div>
+            </div>
+        </div>
+
+        <!-- Active Speaker -->
+        <div class="w-full md:w-2/3 lg:w-1/2 max-w-screen-md mt-6 p-4">
+            <div style=" border-radius: 5px;" class="card bg-base-100 shadow-lg p-2">
+                <video id="activeSpeakerVideo" muted autoplay playsinline
+                    style="padding: 0; margin: 0; width: 100%; height: 430px;"></video>
+                <div id="activeSpeakerUsername" class="bg-base-100 text-center"></div>
+            </div>
+        </div>
+
+        <!-- Call Video -->
+        <div class="w-full md:w-1/3 lg:w-1/4 max-w-screen-md mt-6 p-4">
+            <div id="remoteParticipantContainer"></div>
+        </div>
+        <!-- Controls -->
+
+        <div style="display: flex; justify-content: center; margin-top: 20px;" class="space-x-4 w-full">
+            <button id="meetingViewMicrophone" class="btn btn-primary shadow-lg"><i
+                    class="fas fa-microphone"></i></button>
+            <button id="meetingViewCamera" class="btn btn-primary shadow-lg"><i class="fas fa-video"></i></button>
+            <button id="meetingViewLeave" class="btn btn-primary shadow-lg"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+    </div>
+    <div id="leaveView" class="flex items-center justify-center hidden">
+        <div class="bg-base-100 w-11/12 rounded-lg mt-20 p-4">
+            <h1 class="text-2xl font-bold">You have Left the Meeting</h1>
+            <div class="divider"></div>
+            <p> <button class="btn btn-primary shadow-lg" onclick="window.location.reload()"><i
+                        class="fas fa-sign-in-alt pr-3"></i> Join Another Meeting</button> </p>
+        </div>
+    </div>
+    <script src="/script.js" defer></script>
+</body>
+
+</html>
